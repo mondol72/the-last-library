@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>THE LAST LIBRARY</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { width:100%; height:100%; overflow:hidden; background:#14091f; font-family:Georgia,'Times New Roman',serif; color:#f3e5c0; }
+  button { font-family:inherit; cursor:pointer; }
+
+  #app { width:100%; height:100%; position:relative; }
+  .screen { position:absolute; inset:0; }
+  .hidden { display:none !important; }
+
+  /* ---------- MENU ---------- */
+  #menu {
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    background: radial-gradient(ellipse at 50% 30%, #3a2258 0%, #1d0f33 55%, #0d0518 100%);
+    text-align:center; padding:20px; z-index:30;
+  }
+  #menu h1 {
+    font-size:clamp(30px,8vw,64px); letter-spacing:4px; color:#ffd97a;
+    text-shadow:0 0 20px rgba(255,200,90,.7), 0 0 60px rgba(255,160,40,.4);
+    animation: glowPulse 3s ease-in-out infinite;
+  }
+  @keyframes glowPulse { 50% { text-shadow:0 0 35px rgba(255,220,120,.95), 0 0 90px rgba(255,170,50,.6);} }
+  #menu .subtitle { margin:10px 0 30px; color:#c9b8e8; font-style:italic; font-size:clamp(13px,3vw,18px); }
+  .menuBtn {
+    display:block; width:min(320px,80vw); margin:9px auto; padding:15px;
+    font-size:clamp(16px,4vw,20px); letter-spacing:2px; color:#ffe9b0;
+    background:linear-gradient(180deg,#4a2d6e,#2c1a45); border:2px solid #a07root;
+    border:2px solid #a0793c; border-radius:12px;
+    box-shadow:0 0 14px rgba(255,180,60,.25), inset 0 0 12px rgba(0,0,0,.5);
+    transition:transform .15s, box-shadow .15s;
+  }
+  .menuBtn:hover, .menuBtn:active { transform:scale(1.04); box-shadow:0 0 26px rgba(255,200,90,.55); }
+  .bookFloat { position:absolute; font-size:clamp(22px,5vw,38px); animation:floatB 6s ease-in-out infinite; opacity:.85; pointer-events:none; filter:drop-shadow(0 0 8px rgba(255,200,100,.6)); }
+  @keyframes floatB { 0%,100%{transform:translateY(0) rotate(-6deg);} 50%{transform:translateY(-22px) rotate(6deg);} }
+
+  /* ---------- GAME ---------- */
+  #game { background:#1a0f2a; }
+  #cv { position:absolute; inset:0; width:100%; height:100%; display:block; }
+
+  #hud {
+    position:absolute; top:0; left:0; right:0; z-index:10;
+    display:flex; align-items:center; gap:8px; padding:8px 10px;
+    background:linear-gradient(180deg, rgba(15,7,28,.9), rgba(15,7,28,0));
+    pointer-events:none; flex-wrap:wrap;
+  }
+  #hud > * { pointer-events:auto; }
+  .hudChip {
+    background:rgba(30,15,55,.85); border:1px solid #a0793c; border-radius:20px;
+    padding:6px 14px; font-size:clamp(13px,3.3vw,16px); color:#ffe9b0; white-space:nowrap;
+    box-shadow:0 0 8px rgba(255,180,60,.2);
+  }
+  .hudBtn {
+    background:linear-gradient(180deg,#4a2d6e,#2c1a45); border:1px solid #a0793c; border-radius:20px;
+    padding:7px 14px; font-size:clamp(13px,3.3vw,15px); color:#ffe9b0;
+  }
+  .hudBtn:active { transform:scale(.95); }
+  #roomChip { margin-left:auto; }
+
+  #interactBtn {
+    position:absolute; left:50%; transform:translateX(-50%); bottom:150px; z-index:12;
+    padding:14px 26px; font-size:clamp(15px,4vw,19px); border-radius:30px;
+    background:linear-gradient(180deg,#7a4bd0,#4a2d8e); color:#fff; border:2px solid #ffd97a;
+    box-shadow:0 0 22px rgba(190,140,255,.8); animation:pulseBtn 1.4s infinite;
+  }
+  @keyframes pulseBtn { 50%{ box-shadow:0 0 36px rgba(255,215,120,.9);} }
+
+  /* D-pad */
+  #dpad { position:absolute; left:14px; bottom:16px; z-index:12; width:150px; height:150px; }
+  .dbtn {
+    position:absolute; width:50px; height:50px; border-radius:12px;
+    background:rgba(60,35,100,.75); border:2px solid #a0793c; color:#ffe9b0; font-size:20px;
+    display:flex; align-items:center; justify-content:center; user-select:none; touch-action:none;
+  }
+  .dbtn:active { background:rgba(130,90,200,.9); }
+  #dUp{left:50px;top:0;} #dDown{left:50px;bottom:0;} #dLeft{left:0;top:50px;} #dRight{right:0;top:50px;}
+  #hintFloat {
+    position:absolute; right:14px; bottom:26px; z-index:12; width:64px; height:64px; border-radius:50%;
+    background:linear-gradient(180deg,#8a5a20,#5a3a10); border:2px solid #ffd97a; color:#fff; font-size:26px;
+    box-shadow:0 0 14px rgba(255,200,90,.5);
+  }
+
+  /* ---------- MODAL ---------- */
+  #modal {
+    position:absolute; inset:0; z-index:20; display:flex; align-items:center; justify-content:center;
+    background:rgba(8,3,16,.82); padding:12px; overflow-y:auto;
+  }
+  #modalCard {
+    width:min(560px,96vw); max-height:92vh; overflow-y:auto; border-radius:18px; padding:22px 18px;
+    background:linear-gradient(180deg,#2c1a45,#1a0f2e);
+    border:2px solid #a0793c; box-shadow:0 0 40px rgba(255,180,60,.3);
+    text-align:center; position:relative;
+  }
+  #modalCard.shake { animation:shakeA .4s; }
+  @keyframes shakeA { 0%,100%{transform:translateX(0);} 20%{transform:translateX(-10px);} 40%{transform:translateX(10px);} 60%{transform:translateX(-7px);} 80%{transform:translateX(7px);} }
+  #modalCard h2 { color:#ffd97a; margin-bottom:12px; font-size:clamp(19px,5vw,26px); text-shadow:0 0 12px rgba(255,200,90,.5); }
+  #modalCard p { color:#e8dcc0; line-height:1.55; font-size:clamp(14px,3.6vw,16px); }
+  .optBtn {
+    display:block; width:100%; margin:8px 0; padding:13px; border-radius:10px; font-size:clamp(15px,4vw,17px);
+    background:rgba(70,45,115,.6); border:1.5px solid #8a6a9c; color:#ffefc8; text-align:center;
+    transition:background .15s, transform .1s;
+  }
+  .optBtn:hover { background:rgba(110,70,180,.7); }
+  .optBtn:active { transform:scale(.97); }
+  .optBtn.good { background:#1e6b3a !important; border-color:#5aff9a; }
+  .optBtn.bad { background:#7a1f1f !important; border-color:#ff7a7a; }
+  .chip {
+    display:inline-block; margin:5px; padding:10px 14px; border-radius:10px; font-size:clamp(14px,3.8vw,16px);
+    background:rgba(70,45,115,.8); border:1.5px solid #a0793c; color:#ffefc8;
+  }
+  .chip:active { transform:scale(.95); }
+  #ansRow { min-height:52px; border:2px dashed #8a6a9c; border-radius:12px; margin:10px 0; padding:5px; background:rgba(0,0,0,.25); }
+  .primaryBtn {
+    margin-top:14px; padding:13px 30px; border-radius:12px; font-size:clamp(15px,4vw,18px); letter-spacing:1px;
+    background:linear-gradient(180deg,#c99a3a,#8a5a20); border:2px solid #ffd97a; color:#fff;
+    box-shadow:0 0 14px rgba(255,200,90,.4);
+  }
+  .primaryBtn:active { transform:scale(.96); }
+  .ghostBtn { margin-top:10px; padding:10px 20px; border-radius:12px; background:transparent; border:1.5px solid #8a6a9c; color:#c9b8e8; font-size:14px; }
+  .lifeRow { font-size:22px; margin:6px 0; letter-spacing:4px; }
+  .journalPage {
+    background:linear-gradient(180deg,#f5e6c0,#e0c890); color:#3a2a10; border-radius:8px; padding:18px;
+    font-style:italic; margin:12px 0; box-shadow:0 4px 14px rgba(0,0,0,.5); line-height:1.6;
+    font-size:clamp(14px,3.7vw,16px); border:1px solid #a0793c;
+  }
+  .themeBanner { font-size:44px; margin:8px 0; animation:floatB 4s ease-in-out infinite; }
+
+  /* Toasts */
+  #toasts { position:absolute; top:70px; left:50%; transform:translateX(-50%); z-index:40; pointer-events:none; text-align:center; width:90%; }
+  .toast {
+    display:inline-block; margin:4px; padding:10px 22px; border-radius:24px; font-size:clamp(14px,4vw,18px);
+    background:rgba(40,20,70,.92); border:1.5px solid #ffd97a; color:#ffe9b0;
+    box-shadow:0 0 18px rgba(255,200,90,.6); animation:toastA 2.1s forwards;
+  }
+  @keyframes toastA { 0%{opacity:0; transform:translateY(18px) scale(.8);} 15%{opacity:1; transform:translateY(0) scale(1.05);} 25%{transform:scale(1);} 80%{opacity:1;} 100%{opacity:0; transform:translateY(-24px);} }
+
+  /* Knowledge tree SVG */
+  #treeWrap { margin:8px auto; }
+  .milestone { display:flex; align-items:center; gap:10px; padding:6px 10px; text-align:left; font-size:clamp(13px,3.5vw,15px); }
+  .milestone .dot { width:14px; height:14px; border-radius:50%; background:#443355; border:1px solid #8a6a9c; flex:none; }
+  .milestone.on .dot { background:#ffd97a; box-shadow:0 0 10px #ffd97a; }
+  .milestone.on { color:#ffe9b0; } .milestone { color:#8a7aa0; }
+
+  @media (max-width:480px){
+    #dpad{ width:132px; height:132px; } .dbtn{ width:44px; height:44px;} #dUp,#dDown{left:44px;} #dLeft,#dRight{top:44px;}
+    #interactBtn{ bottom:170px; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- MAIN MENU -->
+  <div id="menu" class="screen">
+    <div class="bookFloat" style="top:10%;left:12%;">📕</div>
+    <div class="bookFloat" style="top:18%;right:14%;animation-delay:1.2s;">📗</div>
+    <div class="bookFloat" style="bottom:20%;left:18%;animation-delay:2.1s;">📘</div>
+    <div class="bookFloat" style="bottom:14%;right:12%;animation-delay:.6s;">📙</div>
+    <div class="bookFloat" style="top:45%;left:5%;animation-delay:3s;">✨</div>
+    <div class="bookFloat" style="top:40%;right:6%;animation-delay:1.8s;">🕯️</div>
+    <h1>THE LAST<br>LIBRARY</h1>
+    <div class="subtitle">"When knowledge is forgotten, the library fades…"</div>
+    <button class="menuBtn" id="btnPlay">▶ &nbsp;PLAY</button>
+    <button class="menuBtn" id="btnHow">📜 &nbsp;HOW TO PLAY</button>
+    <button class="menuBtn" id="btnProg">🌳 &nbsp;PROGRESS</button>
+    <button class="menuBtn" id="btnSet">⚙️ &nbsp;SETTINGS</button>
+  </div>
+
+  <!-- GAME -->
+  <div id="game" class="screen hidden">
+    <canvas id="cv"></canvas>
+    <div id="hud">
+      <div class="hudChip" id="kpChip">✦ 0</div>
+      <button class="hudBtn" id="btnJournal">📖 Journal</button>
+      <button class="hudBtn" id="btnPause">⏸</button>
+      <div class="hudChip" id="roomChip">🏛 Main Hall</div>
+    </div>
+    <button id="interactBtn" class="hidden">✨ Interact</button>
+    <div id="dpad">
+      <div class="dbtn" id="dUp">▲</div>
+      <div class="dbtn" id="dDown">▼</div>
+      <div class="dbtn" id="dLeft">◀</div>
+      <div class="dbtn" id="dRight">▶</div>
+    </div>
+    <button id="hintFloat">💡</button>
+  </div>
+
+  <!-- MODAL -->
+  <div id="modal" class="hidden"><div id="modalCard"></div></div>
+  <div id="toasts"></div>
+</div>
+
+<script>
+(function(){
+"use strict";
+/* ================= STATE ================= */
+const ORDER = ['math','science','history','computer','english'];
+let S = { kp:0, done:{}, unlocked:{math:true}, pages:[], sound:true, finalDone:false, milestones:{} };
+try { const sv = localStorage.getItem('lastLibrary_v1'); if(sv) S = Object.assign(S, JSON.parse(sv)); } catch(e){}
+function save(){ try{ localStorage.setItem('lastLibrary_v1', JSON.stringify(S)); }catch(e){} }
+function doneCount(){ return ORDER.filter(r=>S.done[r]).length; }
+
+/* ================= AUDIO ================= */
+let AC=null;
+function ac(){ if(!AC){ try{ AC = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } if(AC&&AC.state==='suspended')AC.resume(); return AC; }
+function snd(f,d,t,v){ if(!S.sound)return; const c=ac(); if(!c)return; d=d||0.12;t=t||'sine';v=v||0.14;
+  const o=c.createOscillator(),g=c.createGain(); o.type=t;o.frequency.value=f;
+  g.gain.setValueAtTime(v,c.currentTime); g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+d);
+  o.connect(g); g.connect(c.destination); o.start(); o.stop(c.currentTime+d); }
+function sClick(){ snd(660,0.07,'triangle',0.1); }
+function sGood(){ [523,659,784,1047].forEach((f,i)=>setTimeout(()=>snd(f,0.22,'triangle'),i*90)); }
+function sBad(){ snd(210,0.25,'sawtooth',0.07); setTimeout(()=>snd(150,0.3,'sawtooth',0.07),130); }
+function sMagic(){ [880,1174,1568,2093].forEach((f,i)=>setTimeout(()=>snd(f,0.3,'sine',0.1),i*70)); }
+
+/* ================= DATA ================= */
+const ROOMS = {
+ math:{ name:'Room of Mathematics', short:'Mathematics', icon:'🔢', color:'#4f8ef7', banner:'🧮',
+  book:'The Book of Numbers',
+  intro:'You open The Book of Numbers and are pulled into a world of glowing equations floating among crystal towers. Solve 3 puzzles to restore this branch of knowledge!',
+  puzzles:[
+   {type:'choice', q:'A crystal shows a magical sequence:\n2, 4, 8, 16, ?', opts:['24','32','20','30'], ans:'32', hint:'Each number is DOUBLE the one before it.'},
+   {type:'choice', q:'The Keeper stored 7 shelves with 6 spellbooks on each. How many spellbooks in total?', opts:['42','36','48','40'], ans:'42', hint:'Multiply: 7 × 6.'},
+   {type:'choice', q:'The Fibonacci vines grow:\n1, 1, 2, 3, 5, 8, ?', opts:['11','12','13','14'], ans:'13', hint:'Add the last two numbers together: 5 + 8.'}
+  ],
+  page:'Journal Page I — "Numbers were the library\'s first language. When the villagers stopped counting the stars, the Hall of Mathematics began to fade into mist…"' },
+ science:{ name:'Room of Science', short:'Science', icon:'🔬', color:'#3ddc84', banner:'🪐',
+  book:'The Space Book',
+  intro:'The Space Book opens and stars swirl around you! You float among the planets in a tiny pocket universe. Solve 3 puzzles to relight the stars.',
+  puzzles:[
+   {type:'choice', q:'Which planet glows red in the night sky and is called the Red Planet?', opts:['Mars','Venus','Jupiter','Mercury'], ans:'Mars', hint:'Its rusty iron soil gives it a red colour.'},
+   {type:'choice', q:'At what temperature does water freeze into ice?', opts:['0°C','10°C','100°C','−50°C'], ans:'0°C', hint:'It is the same temperature at which ice melts.'},
+   {type:'order', q:'Arrange the planets from CLOSEST to the Sun to FARTHEST:', opts:['Mercury','Venus','Earth','Mars'], ans:['Mercury','Venus','Earth','Mars'], hint:'My Very Excellent Mother… Mercury is closest!'}
+  ],
+  page:'Journal Page II — "Science kept the lanterns of curiosity burning. But when questions stopped being asked, the stars painted on our ceiling began to go out, one by one…"' },
+ history:{ name:'Room of History', short:'History', icon:'🏺', color:'#e0a13a', banner:'🏛️',
+  book:'The Ancient Civilizations Book',
+  intro:'Sand pours from the pages of the Ancient Civilizations Book, and you stand before pyramids and temples of the past. Solve 3 puzzles to remember the old world.',
+  puzzles:[
+   {type:'order', q:'Arrange these events in CHRONOLOGICAL order (oldest first):', opts:['Egyptian Pyramids','Roman Empire','First Airplane','Moon Landing'], ans:['Egyptian Pyramids','Roman Empire','First Airplane','Moon Landing'], hint:'Pyramids ≈ 2500 BC, Rome ≈ 27 BC, Airplane 1903, Moon 1969.'},
+   {type:'choice', q:'Who invented the printing press around the year 1440, letting books spread across the world?', opts:['Johannes Gutenberg','Isaac Newton','Leonardo da Vinci','Marco Polo'], ans:'Johannes Gutenberg', hint:'His name starts with "G" — he was a German inventor.'},
+   {type:'order', q:'Order these inventions from OLDEST to NEWEST:', opts:['The Wheel','Paper','Printing Press','Internet'], ans:['The Wheel','Paper','Printing Press','Internet'], hint:'The wheel came thousands of years before paper.'}
+  ],
+  page:'Journal Page III — "History is memory. A library without memory is just a building. I write these pages so that someone, someday, will remember us…"' },
+ computer:{ name:'Room of Computers', short:'Computer', icon:'💻', color:'#b06af7', banner:'🤖',
+  book:'The Book of Logic Machines',
+  intro:'The Book of Logic Machines hums to life! You enter a glowing digital realm of circuits and code. Solve 3 puzzles to reboot the ancient machine.',
+  puzzles:[
+   {type:'order', q:'Arrange the code blocks so the magic program runs correctly:', opts:['START','INPUT number','IF number > 10','PRINT "Big number!"','END'], ans:['START','INPUT number','IF number > 10','PRINT "Big number!"','END'], hint:'A program always begins with START and finishes with END.'},
+   {type:'choice', q:'The machine reads binary. What is binary 101 in normal numbers?', opts:['5','3','7','101'], ans:'5', hint:'1×4 + 0×2 + 1×1 = ?'},
+   {type:'choice', q:'Which of these loops would run FOREVER and freeze the machine?', opts:['while (true) { … }','repeat 3 times { … }','for i = 1 to 5 { … }','while (x < 10) { x = x + 1 }'], ans:'while (true) { … }', hint:'"true" never becomes false, so it never stops.'}
+  ],
+  page:'Journal Page IV — "The Logic Machine was built to protect the library, but even machines forget when no one teaches them. Its final message was: KNOWLEDGE = SHARED…"' },
+ english:{ name:'Room of English', short:'English', icon:'📚', color:'#f76a8e', banner:'🦉',
+  book:'The Book of Words',
+  intro:'The Book of Words flutters open and letters swirl like fireflies. A wise owl asks you to restore the language of the library. Solve 3 puzzles!',
+  puzzles:[
+   {type:'order', q:'Arrange the words to build a correct sentence:', opts:['The','wise','owl','reads','ancient','books'], ans:['The','wise','owl','reads','ancient','books'], hint:'Start with "The". Who does the action? The wise owl…'},
+   {type:'choice', q:'The word "ENORMOUS" means…', opts:['Very big','Very small','Very fast','Very old'], ans:'Very big', hint:'An elephant is enormous. A mouse is not.'},
+   {type:'choice', q:'Choose the correct word:\n"She ____ to the library every day."', opts:['goes','go','going','gone'], ans:'goes', hint:'With "she / he / it" we add an -s to the verb.'}
+  ],
+  page:'Journal Page V — "Words carry every other kind of knowledge. When people stopped reading aloud to each other, the letters themselves started slipping off the pages…"' }
+};
+const FINAL = {
+ name:'The Ancient Book', icon:'📖', banner:'🌟',
+ intro:'The great Ancient Book at the heart of the library finally opens! Golden light pours out. To break the fading curse you must answer one riddle from EACH field of knowledge. There is no room for mistakes now — but your lives are restored.',
+ puzzles:[
+  {type:'choice', q:'MATH SEAL 🔢\nThe vault\'s first rune: half of 18, minus 4 = ?', opts:['5','7','4','9'], ans:'5', hint:'Half of 18 is 9. Then subtract 4.'},
+  {type:'choice', q:'SCIENCE SEAL 🔬\nWhich gas do plants breathe IN to make their food?', opts:['Carbon dioxide','Oxygen','Helium','Smoke'], ans:'Carbon dioxide', hint:'It is the gas WE breathe out.'},
+  {type:'choice', q:'HISTORY SEAL 🏺\nWhich of these happened FIRST in history?', opts:['Egyptian Pyramids','Moon Landing','First Airplane','Printing Press'], ans:'Egyptian Pyramids', hint:'It is the oldest wonder, built about 4500 years ago.'},
+  {type:'choice', q:'COMPUTER SEAL 💻\nThe machine whispers: binary 10 equals…', opts:['2','10','1','4'], ans:'2', hint:'1×2 + 0×1 = ?'},
+  {type:'order', q:'ENGLISH SEAL 📚\nArrange the library\'s ancient motto:', opts:['Knowledge','lives','when','it','is','shared'], ans:['Knowledge','lives','when','it','is','shared'], hint:'It begins with "Knowledge" and ends with "shared".'}
+ ]
+};
+const MILESTONES = [
+ {n:1, t:'🌱 First Sprout — restored 1 room'},
+ {n:2, t:'🍃 Growing Branch — restored 2 rooms'},
+ {n:3, t:'🌿 Flourishing Bough — restored 3 rooms'},
+ {n:4, t:'🌸 Blossoming Crown — restored 4 rooms'},
+ {n:5, t:'🌳 Tree of Wisdom — restored all 5 rooms'},
+ {n:6, t:'📖 Keeper of the Last Library — solved the Ancient Book'}
+];
+
+/* ================= DOM ================= */
+const $ = id=>document.getElementById(id);
+const menu=$('menu'), game=$('game'), modal=$('modal'), card=$('modalCard');
+const cv=$('cv'), ctx=cv.getContext('2d');
+const interactBtn=$('interactBtn'), kpChip=$('kpChip'), roomChip=$('roomChip');
+
+let mode='menu'; // menu | hall
+let uiOpen=false;
+let W=0,H=0,DPR=1;
+function resize(){ DPR=Math.min(window.devicePixelRatio||1,2); W=game.clientWidth; H=game.clientHeight;
+  cv.width=W*DPR; cv.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0); }
+window.addEventListener('resize', resize);
+
+/* ================= TOAST ================= */
+function toast(msg){ const t=document.createElement('div'); t.className='toast'; t.textContent=msg;
+  $('toasts').appendChild(t); setTimeout(()=>t.remove(),2200); }
+function addKP(n){ S.kp+=n; if(S.kp<0)S.kp=0; kpChip.textContent='✦ '+S.kp; save(); }
+function checkMilestones(){ const c=doneCount()+(S.finalDone?1:0);
+  MILESTONES.forEach(m=>{ if(c>=m.n && !S.milestones[m.n]){ S.milestones[m.n]=true; setTimeout(()=>{ toast(m.t); sMagic(); },700); } }); save(); }
+
+/* ================= MODAL HELPERS ================= */
+function openModal(html){ card.innerHTML=html; modal.classList.remove('hidden'); uiOpen=true; }
+function closeModal(){ modal.classList.add('hidden'); uiOpen=false; updateHint(); }
+window.LL_close = closeModal;
+
+/* ================= MENU BUTTONS ================= */
+$('btnPlay').onclick=()=>{ sClick(); ac(); startGame(); };
+$('btnHow').onclick=()=>{ sClick(); showHow(); };
+$('btnProg').onclick=()=>{ sClick(); showProgress(); };
+$('btnSet').onclick=()=>{ sClick(); showSettings(); };
+
+function showHow(){
+ openModal(`<h2>📜 How to Play</h2>
+ <p style="text-align:left">
+ 🚶 <b>Move</b> with WASD / Arrow keys, or the on-screen D-pad.<br><br>
+ ✨ Walk near a <b>glowing door or book</b> and press the button (or key <b>E</b>) to interact.<br><br>
+ 📖 Opening a magical book transports you into a <b>mini world</b> with 3 puzzles.<br><br>
+ ❤ You have 3 lives per room — run out and the magic fades (you can retry!).<br><br>
+ ✦ Earn <b>Knowledge Points</b>, unlock rooms one by one, and watch the <b>Knowledge Tree</b> grow.<br><br>
+ 🗝 Restore all 5 rooms to open the <b>Ancient Book</b> and uncover the library's secret!<br><br>
+ 💡 Stuck? The hint button helps (costs 10 ✦ inside puzzles).</p>
+ <button class="primaryBtn" onclick="LL_close()">Got it!</button>`);
+}
+function showSettings(){
+ openModal(`<h2>⚙️ Settings</h2>
+ <button class="optBtn" id="sndTgl">${S.sound?'🔊 Sound: ON':'🔇 Sound: OFF'}</button>
+ <button class="optBtn" id="resetBtn">🗑 Reset all progress</button>
+ <button class="primaryBtn" onclick="LL_close()">Close</button>`);
+ $('sndTgl').onclick=function(){ S.sound=!S.sound; save(); this.textContent=S.sound?'🔊 Sound: ON':'🔇 Sound: OFF'; sClick(); };
+ $('resetBtn').onclick=function(){ if(confirm('Erase all progress?')){ S={kp:0,done:{},unlocked:{math:true},pages:[],sound:S.sound,finalDone:false,milestones:{}}; save(); addKP(0); toast('Progress reset'); closeModal(); if(mode==='hall'){} } };
+}
+function treeSVG(size){
+ const c=doneCount(); const branches=ORDER.map((r,i)=>{
+  const on=!!S.done[r]; const ang=(-150+i*30)*Math.PI/180;
+  const x2=100+Math.cos(ang)*62, y2=118+Math.sin(ang)*72;
+  const col=on?ROOMS[r].color:'#3a2f4a';
+  return `<line x1="100" y1="118" x2="${x2}" y2="${y2}" stroke="${on?'#8a5a2a':'#3a2f4a'}" stroke-width="7" stroke-linecap="round"/>
+   <circle cx="${x2}" cy="${y2}" r="${on?15:10}" fill="${col}" ${on?`style="filter:drop-shadow(0 0 6px ${col})"`:''}/>
+   <text x="${x2}" y="${y2+5}" text-anchor="middle" font-size="13">${on?ROOMS[r].icon:'🔒'}</text>`;
+ }).join('');
+ const crown = (S.finalDone)?`<text x="100" y="30" text-anchor="middle" font-size="26">👑</text>`:'';
+ return `<svg id="treeWrap" width="${size}" height="${size}" viewBox="0 0 200 200">
+  <ellipse cx="100" cy="180" rx="55" ry="12" fill="#2a1a3a"/>
+  <path d="M92 180 Q95 140 100 118 Q105 140 108 180 Z" fill="#6a4520"/>
+  ${branches}
+  <circle cx="100" cy="118" r="${8+c*2}" fill="#ffd97a" style="filter:drop-shadow(0 0 ${4+c*3}px #ffd97a)"/>
+  ${crown}</svg>`;
+}
+function showProgress(){
+ const ms = MILESTONES.map(m=>`<div class="milestone ${S.milestones[m.n]?'on':''}"><div class="dot"></div>${m.t}</div>`).join('');
+ openModal(`<h2>🌳 Knowledge Tree</h2>${treeSVG(Math.min(260, window.innerWidth*0.6))}
+ <p>Rooms restored: <b>${doneCount()}/5</b> &nbsp;•&nbsp; Knowledge: <b>✦ ${S.kp}</b></p>
+ <div style="margin-top:10px">${ms}</div>
+ <button class="primaryBtn" onclick="LL_close()">Close</button>`);
+}
+function showJournal(){
+ let inner;
+ if(S.pages.length===0) inner=`<p style="opacity:.7;font-style:italic">The journal is empty… Restore rooms of knowledge to find the Keeper's lost pages.</p>`;
+ else inner=S.pages.map(p=>`<div class="journalPage">${p}</div>`).join('');
+ openModal(`<h2>📖 The Keeper's Journal</h2><p style="margin-bottom:6px">Pages found: ${S.pages.length}/6</p>${inner}
+ <button class="primaryBtn" onclick="LL_close()">Close</button>`);
+}
+$('btnJournal').onclick=()=>{ sClick(); showJournal(); };
+$('btnPause').onclick=()=>{ sClick(); showPause(); };
+function showPause(){
+ openModal(`<h2>⏸ Paused</h2>
+ <button class="optBtn" onclick="LL_close()">▶ Resume</button>
+ <button class="optBtn" id="pProg">🌳 Progress</button>
+ <button class="optBtn" id="pHow">📜 How to Play</button>
+ <button class="optBtn" id="pSet">⚙️ Settings</button>
+ <button class="optBtn" id="pMenu">🏠 Main Menu</button>`);
+ $('pProg').onclick=showProgress; $('pHow').onclick=showHow; $('pSet').onclick=showSettings;
+ $('pMenu').onclick=()=>{ closeModal(); toMenu(); };
+}
+function toMenu(){ mode='menu'; game.classList.add('hidden'); menu.classList.remove('hidden'); }
+
+/* ================= HALL HINT ================= */
+$('hintFloat').onclick=()=>{ sClick(); updateHint(); toast(hallHint()); };
+function hallHint(){
+ for(const r of ORDER){ if(S.unlocked[r] && !S.done[r]) return `💡 Enter the glowing ${ROOMS[r].name} (${ROOMS[r].icon})!`; }
+ if(doneCount()===5 && !S.finalDone) return '💡 The Ancient Book in the center is glowing — open it!';
+ if(S.finalDone) return '💡 You saved the library! Explore, or visit the Knowledge Tree.';
+ return '💡 Explore the hall and find a glowing door.';
+}
+function updateHint(){}
+
+/* ================= PLAYER & HALL ================= */
+const player={ x:0.5, y:0.88, r:16 }; // fractional coords
+const keys={};
+window.addEventListener('keydown',e=>{ keys[e.key.toLowerCase()]=true;
+ if((e.key==='e'||e.key==='E'||e.key==='Enter')&&mode==='hall'&&!uiOpen&&nearSpot) doInteract();
+ if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(e.key.toLowerCase())) e.preventDefault(); });
+window.addEventListener('keyup',e=>{ keys[e.key.toLowerCase()]=false; });
+function bindHold(id,k){ const el=$(id);
+ const dn=e=>{ e.preventDefault(); keys[k]=true; ac(); }; const up=e=>{ e.preventDefault(); keys[k]=false; };
+ el.addEventListener('pointerdown',dn); el.addEventListener('pointerup',up); el.addEventListener('pointerleave',up); el.addEventListener('pointercancel',up); }
+bindHold('dUp','arrowup'); bindHold('dDown','arrowdown'); bindHold('dLeft','arrowleft'); bindHold('dRight','arrowright');
+
+function spots(){
+ const s=[];
+ const defs=[
+  {id:'math', fx:0.16, fy:0.24}, {id:'science', fx:0.5, fy:0.20}, {id:'history', fx:0.84, fy:0.24},
+  {id:'computer', fx:0.10, fy:0.58}, {id:'english', fx:0.90, fy:0.58}
+ ];
+ defs.forEach(d=>s.push({id:d.id, x:d.fx*W, y:d.fy*H, room:true}));
+ s.push({id:'final', x:0.5*W, y:0.47*H});
+ s.push({id:'tree', x:0.5*W, y:0.76*H});
+ return s;
+}
+let nearSpot=null;
+function doInteract(){
+ if(!nearSpot)return; sClick();
+ const id=nearSpot.id;
+ if(id==='tree'){ showProgress(); return; }
+ if(id==='final'){
+   if(S.finalDone){ showWin(); return; }
+   if(doneCount()===5){ startRoom('final'); }
+   else openModal(`<h2>📖 The Ancient Book</h2><div class="themeBanner">🔒</div>
+     <p>The great book is sealed by five locks of knowledge.<br>Restore all 5 rooms to open it.<br><br>Rooms restored: <b>${doneCount()}/5</b></p>
+     <button class="primaryBtn" onclick="LL_close()">Close</button>`);
+   return;
+ }
+ // room door
+ if(!S.unlocked[id]){ sBad(); openModal(`<h2>${ROOMS[id].icon} ${ROOMS[id].name}</h2><div class="themeBanner">🔒</div>
+   <p>This door is sealed by fading magic.<br>Restore the previous room of knowledge to unlock it!</p>
+   <button class="primaryBtn" onclick="LL_close()">Close</button>`); return; }
+ if(S.done[id]){ openModal(`<h2>${ROOMS[id].icon} ${ROOMS[id].name}</h2><div class="themeBanner">✅</div>
+   <p>This room already glows with restored knowledge!<br>Would you like to replay its puzzles? (no extra points)</p>
+   <button class="primaryBtn" id="replayBtn">Replay puzzles</button>
+   <button class="ghostBtn" onclick="LL_close()">Back</button>`);
+   $('replayBtn').onclick=()=>startRoom(id,true); return; }
+ startRoom(id);
+}
+interactBtn.onclick=doInteract;
+
+/* ================= PUZZLE ENGINE ================= */
+let cur={ id:null, idx:0, lives:3, replay:false };
+function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+function startRoom(id, replay){
+ cur={ id:id, idx:0, lives:3, replay:!!replay };
+ const R = id==='final'?FINAL:ROOMS[id];
+ openModal(`<h2>${R.icon} ${R.name}</h2>
+  <div class="themeBanner">${R.banner}</div>
+  ${id!=='final'?`<p style="color:#ffd97a;font-style:italic">✨ ${R.book} ✨</p>`:''}
+  <p style="margin-top:8px">${R.intro}</p>
+  <button class="primaryBtn" id="beginBtn">Begin!</button>
+  <button class="ghostBtn" onclick="LL_close()">Not yet</button>`);
+ $('beginBtn').onclick=()=>{ sMagic(); showPuzzle(); };
+ roomChip.textContent = R.icon+' '+(R.short||'Ancient Book');
+}
+
+let orderPick=[];
+function showPuzzle(){
+ const R = cur.id==='final'?FINAL:ROOMS[cur.id];
+ const p = R.puzzles[cur.idx];
+ orderPick=[];
+ const hearts='❤'.repeat(cur.lives)+'🖤'.repeat(3-cur.lives);
+ let body='';
+ if(p.type==='choice'){
+   body = shuffle(p.opts).map(o=>`<button class="optBtn" data-o="${encodeURIComponent(o)}">${o}</button>`).join('');
+ } else {
+   body = `<div id="ansRow"></div><div id="pool">${shuffle(p.opts).map(o=>`<button class="chip" data-o="${encodeURIComponent(o)}">${o}</button>`).join('')}</div>
+   <button class="primaryBtn" id="checkBtn">Check ✔</button>`;
+ }
+ openModal(`<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+   <b style="color:#ffd97a">${R.icon} Puzzle ${cur.idx+1}/${R.puzzles.length}</b>
+   <span class="lifeRow">${hearts}</span></div>
+  <p style="white-space:pre-line;margin:12px 0;font-size:clamp(15px,4vw,18px)">${p.q}</p>
+  <div id="pBody">${body}</div>
+  <button class="ghostBtn" id="pzHint">💡 Hint (10 ✦)</button>
+  <button class="ghostBtn" id="pzLeave">Leave room</button>
+  <p id="hintTxt" style="color:#8fe3ff;margin-top:8px;font-style:italic"></p>`);
+ $('pzLeave').onclick=()=>{ closeModal(); roomChip.textContent='🏛 Main Hall'; };
+ $('pzHint').onclick=()=>{ if(S.kp>=10){ addKP(-10); } $('hintTxt').textContent='💡 '+p.hint; sClick(); };
+ if(p.type==='choice'){
+   card.querySelectorAll('.optBtn').forEach(b=>{
+     b.onclick=()=>{ const val=decodeURIComponent(b.dataset.o);
+       if(val===p.ans){ b.classList.add('good'); onCorrect(); }
+       else { b.classList.add('bad'); onWrong(); } };
+   });
+ } else {
+   const pool=$('pool'), ans=$('ansRow');
+   card.querySelectorAll('#pool .chip').forEach(b=>{
+     b.onclick=()=>{ sClick(); orderPick.push(decodeURIComponent(b.dataset.o)); ans.appendChild(b);
+       b.onclick=()=>{ sClick(); orderPick=orderPick.filter(x=>x!==decodeURIComponent(b.dataset.o)); pool.appendChild(b); rebind(b); }; };
+   });
+   function rebind(b){ b.onclick=()=>{ sClick(); orderPick.push(decodeURIComponent(b.dataset.o)); ans.appendChild(b);
+       b.onclick=()=>{ sClick(); orderPick=orderPick.filter(x=>x!==decodeURIComponent(b.dataset.o)); pool.appendChild(b); rebind(b); }; }; }
+   $('checkBtn').onclick=()=>{
+     if(orderPick.length!==p.ans.length){ toast('Place all the pieces first!'); return; }
+     if(orderPick.every((v,i)=>v===p.ans[i])) onCorrect(); else onWrong();
+   };
+ }
+}
+function onCorrect(){
+ sGood(); if(!cur.replay && cur.id!=='final') addKP(30);
+ if(cur.id==='final') addKP(20);
+ toast(cur.replay?'✔ Correct!':'✔ Correct! +'+(cur.id==='final'?20:30)+' ✦');
+ card.querySelectorAll('button').forEach(b=>b.disabled=true);
+ setTimeout(()=>{
+   cur.idx++;
+   const R = cur.id==='final'?FINAL:ROOMS[cur.id];
+   if(cur.idx>=R.puzzles.length) completeRoom(); else showPuzzle();
+ },800);
+}
+function onWrong(){
+ sBad(); cur.lives--; card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake');
+ if(cur.lives<=0){ setTimeout(failRoom,500); }
+ else { toast('✖ Not quite… '+cur.lives+' ❤ left'); setTimeout(showPuzzle,900); }
+}
+function failRoom(){
+ const R = cur.id==='final'?FINAL:ROOMS[cur.id];
+ openModal(`<h2>💨 The Magic Fades…</h2><div class="themeBanner">🕯️</div>
+  <p>The ${cur.id==='final'?'Ancient Book slams shut':'book pushes you back into the hall'}.<br>But knowledge rewards the persistent — try again!</p>
+  <button class="primaryBtn" id="retryBtn">🔄 Try Again</button>
+  <button class="ghostBtn" id="backHall">Back to Hall</button>`);
+ $('retryBtn').onclick=()=>startRoom(cur.id, cur.replay);
+ $('backHall').onclick=()=>{ closeModal(); roomChip.textContent='🏛 Main Hall'; };
+}
+function completeRoom(){
+ if(cur.id==='final'){ S.finalDone=true; addKP(200); S.pages.length<6 && S.pages.push('Final Page — "So it was never a curse. The library fades when knowledge stays locked away. It grows when it is SHARED. You, young explorer, are the new Keeper. Teach others what you have learned — and the Last Library will never be the last."'); checkMilestones(); save(); showWin(); return; }
+ const id=cur.id, R=ROOMS[id];
+ if(!cur.replay){
+   S.done[id]=true;
+   const ni=ORDER.indexOf(id)+1; if(ni<ORDER.length) S.unlocked[ORDER[ni]]=true;
+   addKP(50); S.pages.push(R.page); checkMilestones(); save();
+ }
+ sMagic();
+ const nextName = ORDER.indexOf(id)+1<ORDER.length ? ROOMS[ORDER[ORDER.indexOf(id)+1]].name : 'the Ancient Book';
+ openModal(`<h2>🌟 Room Restored!</h2><div class="themeBanner">${R.icon}</div>
+  <p><b>${R.name}</b> glows with light again!<br>${cur.replay?'':'+50 ✦ bonus • A branch of the Knowledge Tree awakens 🌿'}</p>
+  ${!cur.replay?`<div class="journalPage">📜 You found a torn journal page:<br><br>${R.page}</div>`:''}
+  ${!cur.replay?`<p style="color:#8fe3ff">🗝 ${doneCount()<5?('Unlocked: '+nextName):'All rooms restored! The Ancient Book awaits…'}</p>`:''}
+  <button class="primaryBtn" id="backBtn">Return to Hall</button>`);
+ $('backBtn').onclick=()=>{ closeModal(); roomChip.textContent='🏛 Main Hall'; };
+}
+function showWin(){
+ openModal(`<h2>👑 THE LIBRARY IS SAVED!</h2><div class="themeBanner">📖✨🌳</div>
+  <p>The Ancient Book opens fully, and golden light floods every shelf. The fading stops. The Knowledge Tree blossoms above the dome.</p>
+  <div class="journalPage">"Knowledge lives when it is shared." — You are now the Keeper of the Last Library.</div>
+  <p><b>Final Score: ✦ ${S.kp}</b></p>
+  <button class="primaryBtn" id="winTree">🌳 View Knowledge Tree</button>
+  <button class="ghostBtn" id="winRestart">🔄 Restart Adventure</button>
+  <button class="ghostBtn" id="winMenu">🏠 Main Menu</button>`);
+ $('winTree').onclick=showProgress;
+ $('winRestart').onclick=()=>{ S={kp:0,done:{},unlocked:{math:true},pages:[],sound:S.sound,finalDone:false,milestones:{}}; save(); addKP(0); closeModal(); toast('A new adventure begins…'); };
+ $('winMenu').onclick=()=>{ closeModal(); toMenu(); };
+}
+
+/* ================= RENDER HALL ================= */
+let t=0;
+const dust=[]; for(let i=0;i<22;i++) dust.push({x:Math.random(),y:Math.random(),s:Math.random()*1.6+0.6,v:Math.random()*0.0004+0.0001});
+const fbooks=[ {fx:0.3,fy:0.38,e:'📕'},{fx:0.7,fy:0.36,e:'📗'},{fx:0.24,fy:0.66,e:'📘'},{fx:0.76,fy:0.66,e:'📙'} ];
+
+function roundRect(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+
+function drawShelf(x,y,w,h){
+ ctx.fillStyle='#3a2410'; ctx.fillRect(x,y,w,h);
+ ctx.fillStyle='#241608'; ctx.fillRect(x,y,w,4);
+ const cols=['#8e3b3b','#3b6a8e','#4a8e3b','#8e7a3b','#6a3b8e','#8e5a3b'];
+ const rows=Math.max(2,Math.floor(h/26));
+ for(let r=0;r<rows;r++){ let bx=x+4; const by=y+6+r*(h-8)/rows;
+  while(bx<x+w-8){ const bw=5+((bx*7+r*13)%6); ctx.fillStyle=cols[Math.floor(bx+r)%6]; ctx.fillRect(bx,by,bw,(h-10)/rows-4); bx+=bw+2; } }
+}
+function drawDoor(sp){
+ const R=ROOMS[sp.id]; const unlocked=S.unlocked[sp.id], done=S.done[sp.id];
+ const dw=Math.min(74,W*0.16), dh=dw*1.4; const x=sp.x-dw/2, y=sp.y-dh/2;
+ // glow
+ if(unlocked&&!done){ const g=ctx.createRadialGradient(sp.x,sp.y,5,sp.x,sp.y,dw*1.2);
+   const a=0.25+0.12*Math.sin(t*0.05+sp.x); g.addColorStop(0,R.color+'cc'); g.addColorStop(1,'transparent');
+   ctx.globalAlpha=a; ctx.fillStyle=g; ctx.fillRect(sp.x-dw*1.3,sp.y-dw*1.3,dw*2.6,dw*2.6); ctx.globalAlpha=1; }
+ // arch
+ ctx.fillStyle = unlocked ? (done?'#3a2a55':'#2a1a45') : '#221a2e';
+ ctx.strokeStyle = unlocked ? R.color : '#4a3a5a'; ctx.lineWidth=3;
+ ctx.beginPath(); ctx.moveTo(x,y+dh); ctx.lineTo(x,y+dh*0.32);
+ ctx.quadraticCurveTo(sp.x,y-dh*0.18,x+dw,y+dh*0.32); ctx.lineTo(x+dw,y+dh); ctx.closePath();
+ ctx.fill(); ctx.stroke();
+ ctx.font=(dw*0.42)+'px serif'; ctx.textAlign='center';
+ ctx.fillText(done?'✅':(unlocked?R.icon:'🔒'), sp.x, sp.y+dw*0.14);
+ ctx.font='bold '+Math.max(11,dw*0.17)+'px Georgia'; ctx.fillStyle=unlocked?'#ffe9b0':'#8a7aa0';
+ ctx.fillText(R.short, sp.x, y+dh+16);
+}
+function drawTreeHall(x,y){
+ const c=doneCount(); const sc=Math.min(W,H)/560;
+ ctx.save(); ctx.translate(x,y); ctx.scale(sc,sc);
+ ctx.fillStyle='#2a1a3a'; ctx.beginPath(); ctx.ellipse(0,44,52,11,0,0,7); ctx.fill();
+ ctx.fillStyle='#6a4520'; ctx.beginPath(); ctx.moveTo(-8,44); ctx.quadraticCurveTo(-4,0,0,-16); ctx.quadraticCurveTo(4,0,8,44); ctx.closePath(); ctx.fill();
+ for(let i=0;i<5;i++){ const on=!!S.done[ORDER[i]]; const ang=(-150+i*30)*Math.PI/180;
+  const x2=Math.cos(ang)*46, y2=-16+Math.sin(ang)*46;
+  ctx.strokeStyle=on?'#8a5a2a':'#3a2f4a'; ctx.lineWidth=5; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(0,-16); ctx.lineTo(x2,y2); ctx.stroke();
+  ctx.fillStyle=on?ROOMS[ORDER[i]].color:'#3a2f4a';
+  if(on){ ctx.shadowColor=ROOMS[ORDER[i]].color; ctx.shadowBlur=10; }
+  ctx.beginPath(); ctx.arc(x2,y2,on?11:7,0,7); ctx.fill(); ctx.shadowBlur=0; }
+ ctx.fillStyle='#ffd97a'; ctx.shadowColor='#ffd97a'; ctx.shadowBlur=6+c*3;
+ ctx.beginPath(); ctx.arc(0,-16,6+c*1.6,0,7); ctx.fill(); ctx.shadowBlur=0;
+ if(S.finalDone){ ctx.font='22px serif'; ctx.textAlign='center'; ctx.fillText('👑',0,-58); }
+ ctx.font='12px Georgia'; ctx.fillStyle='#c9b8e8'; ctx.textAlign='center'; ctx.fillText('Knowledge Tree',0,64);
+ ctx.restore();
+}
+function drawPedestal(x,y){
+ const ready = doneCount()===5 && !S.finalDone;
+ const pulse = 0.4+0.3*Math.sin(t*0.07);
+ const g=ctx.createRadialGradient(x,y,4,x,y,70);
+ g.addColorStop(0, ready?`rgba(255,220,120,${0.5+pulse*0.4})`:'rgba(255,200,100,0.28)');
+ g.addColorStop(1,'transparent'); ctx.fillStyle=g; ctx.fillRect(x-80,y-80,160,160);
+ ctx.fillStyle='#4a3a2a'; roundRect(x-24,y+8,48,16,4); ctx.fill();
+ ctx.font='34px serif'; ctx.textAlign='center';
+ ctx.save(); ctx.translate(0, Math.sin(t*0.05)*3);
+ ctx.fillText(S.finalDone?'👑':'📖', x, y+6); ctx.restore();
+ ctx.font='bold 12px Georgia'; ctx.fillStyle= ready?'#ffd97a':'#c9b8e8';
+ ctx.fillText(S.finalDone?'The Library Lives':'The Ancient Book', x, y+40);
+ if(!ready&&!S.finalDone){ ctx.font='11px Georgia'; ctx.fillStyle='#8a7aa0'; ctx.fillText(doneCount()+'/5 seals broken', x, y+54); }
+}
+function drawPlayer(){
+ const x=player.x*W, y=player.y*H; const s=Math.min(W,H)/560;
+ ctx.save(); ctx.translate(x,y); ctx.scale(s,s);
+ ctx.fillStyle='rgba(0,0,0,.35)'; ctx.beginPath(); ctx.ellipse(0,18,13,5,0,0,7); ctx.fill();
+ const bob=Math.sin(t*0.2)* (moving?2:0.6);
+ ctx.translate(0,bob);
+ ctx.fillStyle='#4f8ef7'; roundRect(-9,-6,18,22,6); ctx.fill(); // body
+ ctx.fillStyle='#8a5a2a'; roundRect(-11,-2,4,16,2); ctx.fill(); // satchel strap
+ ctx.fillStyle='#f5cf9a'; ctx.beginPath(); ctx.arc(0,-14,9,0,7); ctx.fill(); // head
+ ctx.fillStyle='#5a3a1a'; ctx.beginPath(); ctx.arc(0,-18,9,Math.PI,0); ctx.fill(); // hair
+ ctx.fillStyle='#222'; ctx.beginPath(); ctx.arc(-3,-13,1.4,0,7); ctx.arc(3,-13,1.4,0,7); ctx.fill();
+ ctx.strokeStyle='#a04'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(0,-10,3.5,0.2,Math.PI-0.2); ctx.stroke(); // smile
+ ctx.font='11px serif'; ctx.fillText('📗',10,4);
+ ctx.restore();
+}
+let moving=false;
+function update(){
+ if(mode!=='hall'||uiOpen){ moving=false; return; }
+ const sp=0.0065;
+ let dx=0,dy=0;
+ if(keys['arrowup']||keys['w'])dy-=1; if(keys['arrowdown']||keys['s'])dy+=1;
+ if(keys['arrowleft']||keys['a'])dx-=1; if(keys['arrowright']||keys['d'])dx+=1;
+ moving=(dx||dy);
+ if(moving){ const l=Math.hypot(dx,dy); player.x+=dx/l*sp*(H/Math.max(W,1)); player.y+=dy/l*sp; }
+ player.x=Math.max(0.06,Math.min(0.94,player.x)); player.y=Math.max(0.30,Math.min(0.93,player.y));
+ // nearest spot
+ const px=player.x*W, py=player.y*H; const rad=Math.min(W,H)*0.16;
+ nearSpot=null; let best=1e9;
+ spots().forEach(s=>{ const d=Math.hypot(s.x-px,s.y-py); if(d<rad && d<best){ best=d; nearSpot=s; } });
+ if(nearSpot){
+   let label='✨ Interact';
+   if(nearSpot.id==='tree') label='🌳 View Knowledge Tree';
+   else if(nearSpot.id==='final') label= S.finalDone?'👑 The Ancient Book':(doneCount()===5?'📖 Open the Ancient Book!':'📖 Examine Ancient Book');
+   else label = S.unlocked[nearSpot.id]? (S.done[nearSpot.id]?'✅ '+ROOMS[nearSpot.id].short+' (restored)':'✨ Enter '+ROOMS[nearSpot.id].name) : '🔒 Locked Door';
+   interactBtn.textContent=label; interactBtn.classList.remove('hidden');
+ } else interactBtn.classList.add('hidden');
+}
+function render(){
+ t++;
+ update();
+ if(mode!=='hall'){ requestAnimationFrame(render); return; }
+ // background
+ const bg=ctx.createLinearGradient(0,0,0,H);
+ bg.addColorStop(0,'#241238'); bg.addColorStop(0.55,'#1c0f2e'); bg.addColorStop(1,'#150a22');
+ ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
+ // warm center light
+ const gl=ctx.createRadialGradient(W/2,H*0.45,20,W/2,H*0.45,Math.max(W,H)*0.6);
+ gl.addColorStop(0,'rgba(255,190,90,0.10)'); gl.addColorStop(1,'transparent');
+ ctx.fillStyle=gl; ctx.fillRect(0,0,W,H);
+ // floor
+ ctx.fillStyle='#2a1b3d'; ctx.fillRect(0,H*0.30,W,H*0.70);
+ ctx.strokeStyle='rgba(255,200,120,0.06)';
+ for(let i=1;i<6;i++){ ctx.beginPath(); ctx.moveTo(0,H*0.30+ i*H*0.7/6); ctx.lineTo(W,H*0.30+ i*H*0.7/6); ctx.stroke(); }
+ // rug
+ ctx.fillStyle='rgba(140,50,60,0.35)'; roundRect(W*0.32,H*0.36,W*0.36,H*0.28,14); ctx.fill();
+ ctx.strokeStyle='rgba(255,215,120,0.3)'; ctx.stroke();
+ // shelves along top wall
+ const sh=H*0.10;
+ drawShelf(W*0.26, H*0.10, W*0.14, sh); drawShelf(W*0.60, H*0.10, W*0.14, sh);
+ drawShelf(W*0.015, H*0.34, W*0.055, H*0.32*0.5); drawShelf(W*0.93, H*0.34, W*0.055, H*0.16);
+ // candles
+ ctx.font='16px serif'; ctx.textAlign='center';
+ ctx.fillText('🕯️', W*0.33, H*0.095); ctx.fillText('🕯️', W*0.67, H*0.095);
+ // dust
+ ctx.fillStyle='rgba(255,220,150,0.5)';
+ dust.forEach(d=>{ d.y-=d.v; if(d.y<0)d.y=1; ctx.globalAlpha=0.15+0.15*Math.sin(t*0.02+d.x*20);
+   ctx.beginPath(); ctx.arc(d.x*W, d.y*H, d.s,0,7); ctx.fill(); }); ctx.globalAlpha=1;
+ // floating books
+ fbooks.forEach((b,i)=>{ ctx.font=Math.max(16,Math.min(W,H)*0.035)+'px serif';
+   ctx.fillText(b.e, b.fx*W, b.fy*H + Math.sin(t*0.03+i*2)*8); });
+ // doors
+ spots().forEach(s=>{ if(s.room) drawDoor(s); });
+ drawPedestal(W*0.5, H*0.47);
+ drawTreeHall(W*0.5, H*0.76);
+ drawPlayer();
+ requestAnimationFrame(render);
+}
+
+/* ================= START ================= */
+function startGame(){
+ menu.classList.add('hidden'); game.classList.remove('hidden');
+ resize(); mode='hall'; player.x=0.5; player.y=0.88;
+ kpChip.textContent='✦ '+S.kp; roomChip.textContent='🏛 Main Hall';
+ if(!S._welcomed){ S._welcomed=true; save();
+   openModal(`<h2>🏛 Welcome, Young Explorer</h2><div class="themeBanner">📖✨</div>
+   <p>You step into <b>THE LAST LIBRARY</b> — and something is wrong. The shelves are fading like mist, and half the books are blank.</p>
+   <div class="journalPage">A torn note flutters down: <br><br>"The library is disappearing because its knowledge is being forgotten. Restore the five Rooms of Knowledge… before the last page turns blank." — <b>The Keeper</b></div>
+   <p>Start with the glowing <b>🔢 Room of Mathematics</b>!</p>
+   <button class="primaryBtn" onclick="LL_close()">Begin the Adventure</button>`); }
+ else toast(hallHint());
+}
+document.body.addEventListener('pointerdown', ac, {once:false});
+resize();
+requestAnimationFrame(render);
+})();
+</script>
+</body>
+</html>
